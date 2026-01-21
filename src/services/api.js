@@ -1,0 +1,102 @@
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform, Alert } from 'react-native';
+
+// Gunakan IP lokal yang bisa diakses oleh device/emulator
+// Untuk emulator Android: 10.0.2.2
+// Untuk iOS simulator: localhost
+// Untuk perangkat fisik: IP komputer (misal: 192.168.1.100)
+const getBaseURL = () => {
+  if (__DEV__) {
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:8000/api'; // Android emulator
+    } else {
+      return 'http://localhost:8000/api'; // iOS simulator
+    }
+  } else {
+    return 'https://api.busticketing.com/api'; // Production URL
+  }
+};
+
+const api = axios.create({
+  baseURL: getBaseURL(),
+  timeout: 10000, // 10 detik timeout
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Request interceptor
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error getting token:', error);
+    }
+    return config;
+  },
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Log error details
+    console.error('API Error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      method: error.config?.method,
+      message: error.message,
+    });
+
+    // Handle specific error codes
+    if (error.response?.status === 401) {
+      // Token expired or invalid
+      try {
+        await AsyncStorage.multiRemove(['userToken', 'userData']);
+        // Anda bisa dispatch action untuk logout di sini
+        // atau navigasi ke login screen
+      } catch (storageError) {
+        console.error('Error clearing storage:', storageError);
+      }
+      
+      // Bisa tambahkan navigation logic di sini
+      // Misal: navigation.navigate('Login')
+    }
+    
+    // Handle network errors
+    if (!error.response) {
+      Alert.alert(
+        'Network Error',
+        'Please check your internet connection and try again.',
+        [{ text: 'OK' }]
+      );
+    }
+    
+    // Handle server errors
+    if (error.response?.status >= 500) {
+      Alert.alert(
+        'Server Error',
+        'Something went wrong on our server. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;
