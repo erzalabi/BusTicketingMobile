@@ -2,19 +2,15 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Alert } from 'react-native';
 
-// Gunakan IP lokal yang bisa diakses oleh device/emulator
-// Untuk emulator Android: 10.0.2.2
-// Untuk iOS simulator: localhost
-// Untuk perangkat fisik: IP komputer (misal: 192.168.1.100)
 const getBaseURL = () => {
   if (__DEV__) {
     if (Platform.OS === 'android') {
-      return 'http://10.0.2.2:8000/api'; // Android emulator
+      return 'http://192.168.1.12:8000/api'; // IP komputer Anda
     } else {
-      return 'http://localhost:8000/api'; // iOS simulator
+      return 'http://localhost:8000/api'; // untuk iOS simulator
     }
   } else {
-    return 'https://api.busticketing.com/api'; // Production URL
+    return 'https://api.busticketing.com/api';
   }
 };
 
@@ -30,6 +26,7 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   async (config) => {
+    console.log('Full URL:', config.baseURL + config.url);
     try {
       const token = await AsyncStorage.getItem('userToken');
       if (token) {
@@ -53,6 +50,7 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    console.error('API Error Response:', error.response?.data);
     
     // Log error details
     console.error('API Error:', {

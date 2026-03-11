@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar, View, ActivityIndicator } from 'react-native';
 import { store } from './src/store/store';
-import AppNavigator from './src/navigation/AppNavigator';
+import AppNavigator from './src/navigation/AppNav';
 
 export default function App() {
   const [isAppReady, setIsAppReady] = useState(false);

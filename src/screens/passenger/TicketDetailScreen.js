@@ -8,21 +8,24 @@ import {
   TouchableOpacity,
   Alert,
   StatusBar,
-  Share,
+  Share as RNShareNative,
   Linking,
   Platform,
   Animated,
   Dimensions,
   Modal,
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5, Entypo } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Entypo from 'react-native-vector-icons/Entypo';
+
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import ViewShot from 'react-native-view-shot';
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
-import * as Sharing from 'expo-sharing';
+import RNFS from 'react-native-fs';
+import Share from 'react-native-share';
 
 const { width, height } = Dimensions.get('window');
 

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, registerUser } from '../../services/authService';
+import { authService } from '../../services/authService';
 
-// Helper untuk AsyncStorage
+// Helper untuk AsyncStorage (sama seperti kode Anda)
 const storageHelper = {
   setAuthData: async (token, user) => {
     try {
@@ -15,7 +15,6 @@ const storageHelper = {
       throw error;
     }
   },
-  
   clearAuthData: async () => {
     try {
       await AsyncStorage.multiRemove(['userToken', 'userData']);
@@ -27,19 +26,30 @@ const storageHelper = {
 
 export const login = createAsyncThunk(
   'auth/login',
-  async ({ email, password, role }, { rejectWithValue }) => {
+  async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await loginUser(email, password, role);
-      const { token, user } = response.data;
-      
-      // Simpan ke AsyncStorage
+      const response = await authService.login(email, password);
+      // ✅ Ambil dari response.data.data
+      const { token, user } = response.data.data;
       await storageHelper.setAuthData(token, user);
-      
       return { token, user };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Login failed. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Login failed.';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const googleLogin = createAsyncThunk(
+  'auth/googleLogin',
+  async (idToken, { rejectWithValue }) => {
+    try {
+      const response = await authService.googleLogin(idToken);
+      const { token, user } = response.data.data;
+      await storageHelper.setAuthData(token, user);
+      return { token, user };
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Google login failed.';
       return rejectWithValue(errorMessage);
     }
   }
@@ -49,12 +59,10 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await registerUser(userData);
+      const response = await authService.register(userData);
       return response.data;
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 
-                          error.message || 
-                          'Registration failed. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Registration failed.';
       return rejectWithValue(errorMessage);
     }
   }
@@ -81,13 +89,8 @@ export const checkAuthStatus = createAsyncThunk(
         AsyncStorage.getItem('userToken'),
         AsyncStorage.getItem('userData')
       ]);
-      
       if (token && userData) {
-        return { 
-          token, 
-          user: JSON.parse(userData),
-          isAuthenticated: true 
-        };
+        return { token, user: JSON.parse(userData), isAuthenticated: true };
       }
       return { token: null, user: null, isAuthenticated: false };
     } catch (error) {
@@ -143,7 +146,25 @@ const authSlice = createSlice({
         state.error = action.payload;
         state.isAuthenticated = false;
       })
-      
+
+      // Google Login
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        state.isAuthenticated = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+      })
+
       // Register
       .addCase(register.pending, (state) => {
         state.isLoading = true;
@@ -157,7 +178,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Logout
       .addCase(logout.fulfilled, (state) => {
         state.user = null;
@@ -167,13 +188,12 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(logout.rejected, (state) => {
-        // Force logout meski ada error storage
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
         state.isLoading = false;
       })
-      
+
       // Check Auth Status
       .addCase(checkAuthStatus.pending, (state) => {
         state.isLoading = true;

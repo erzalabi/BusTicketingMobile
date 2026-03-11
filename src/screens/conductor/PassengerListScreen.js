@@ -17,7 +17,11 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome5, Entypo } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Entypo from 'react-native-vector-icons/Entypo';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';

@@ -297,24 +297,8 @@ const bookingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    const addDefaultCases = (thunk, loadingKey = 'loading', errorKey = 'error') => {
-      builder
-        .addCase(thunk.pending, (state) => {
-          state[loadingKey] = true;
-          state[errorKey] = null;
-          state.success = false;
-        })
-        .addCase(thunk.fulfilled, (state, action) => {
-          state[loadingKey] = false;
-          state.success = true;
-          state.lastUpdated = new Date().toISOString();
-        })
-        .addCase(thunk.rejected, (state, action) => {
-          state[loadingKey] = false;
-          state[errorKey] = action.payload;
-          state.success = false;
-        });
-    };
+    // HAPUS fungsi addDefaultCases karena menyebabkan duplikasi
+    // Sebagai gantinya, tulis semua handler secara eksplisit
     
     // Fetch Available Buses
     builder
@@ -331,23 +315,57 @@ const bookingSlice = createSlice({
         state.busError = action.payload;
       });
     
-    // Create Booking
-    addDefaultCases(createBooking);
-    builder.addCase(createBooking.fulfilled, (state, action) => {
-      state.currentBooking = {
-        ...state.currentBooking,
-        ...action.payload.booking,
-        bookingDate: new Date().toISOString(),
-      };
-      state.bookingHistory.unshift(action.payload.booking);
-    });
+    // Create Booking - TULIS SEMUA HANDLER SECARA LENGKAP
+    builder
+      .addCase(createBooking.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(createBooking.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+        state.lastUpdated = new Date().toISOString();
+        
+        // Logika khusus untuk fulfilled
+        state.currentBooking = {
+          ...state.currentBooking,
+          ...action.payload.booking,
+          bookingDate: new Date().toISOString(),
+        };
+        
+        // Tambahkan ke history jika ada booking data
+        if (action.payload.booking) {
+          state.bookingHistory.unshift(action.payload.booking);
+        }
+      })
+      .addCase(createBooking.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      });
     
-    // Process Payment
-    addDefaultCases(processPayment);
-    builder.addCase(processPayment.fulfilled, (state) => {
-      state.currentBooking.paymentStatus = 'paid';
-      state.currentBooking.status = 'confirmed';
-    });
+    // Process Payment - TULIS SEMUA HANDLER SECARA LENGKAP
+    builder
+      .addCase(processPayment.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(processPayment.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+        state.lastUpdated = new Date().toISOString();
+        
+        // Logika khusus untuk fulfilled
+        state.currentBooking.paymentStatus = 'paid';
+        state.currentBooking.status = 'confirmed';
+      })
+      .addCase(processPayment.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      });
     
     // Fetch Booking History
     builder
